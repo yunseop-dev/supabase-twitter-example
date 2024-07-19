@@ -14,21 +14,21 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
-          tweet_id: string | null
+          tweet_id: string
           user_id: string | null
         }
         Insert: {
           content: string
           created_at?: string | null
           id?: string
-          tweet_id?: string | null
+          tweet_id: string
           user_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string | null
           id?: string
-          tweet_id?: string | null
+          tweet_id?: string
           user_id?: string | null
         }
         Relationships: [
@@ -55,7 +55,7 @@ export type Database = {
         }
         Insert: {
           tweet_id: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           tweet_id?: string
