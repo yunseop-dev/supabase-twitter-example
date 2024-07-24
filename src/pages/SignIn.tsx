@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../supabaseClient";
+import { AuthError } from "@supabase/supabase-js";
 
 export default function SignIn() {
     const navigate = useNavigate();
@@ -8,8 +9,9 @@ export default function SignIn() {
             email,
             password,
         });
-        if (error) {
-            console.error("Error signing in:", error.message);
+        if (error instanceof AuthError) {
+            console.log("Error signing in:", error.name, error.message);
+            throw error
         }
         return data;
     };

@@ -8,6 +8,7 @@ import {
 import './index.css'
 import SignIn from './pages/SignIn.tsx';
 import Tweet from './pages/Tweet.tsx';
+import MyProfile from './pages/MyProfile.tsx';
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
     path: "/tweet/:tweetId",
     element: <Tweet />,
   },
+  {
+    path: "/my-profile",
+    element: <MyProfile />,
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
