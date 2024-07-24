@@ -19,18 +19,19 @@ const App = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const getTweets = async () => {
     const { data } = await tweetsQuery
-    return data;
+    setTweets(data);
   };
 
   useEffect(() => {
-    getTweets().then((res) => setTweets(res));
-  }, []);
-
-  useEffect(() => {
-    supabaseClient.auth.getUser().then((user) => {
-      setUserId(user.data.user?.id ?? '');
+    supabaseClient.auth.onAuthStateChange(async (_, session) => {
+      if (!session) {
+        navigate("/sign-in");
+        return;
+      }
+      setUserId(session.user.id);
+      getTweets();
     });
-  }, []);
+  }, [navigate]);
 
   return (
     <>
@@ -40,8 +41,7 @@ const App = () => {
           const formData = new FormData(e.target as HTMLFormElement);
           const content = formData.get("content")?.toString() ?? '';
           await supabaseClient.from("tweets").insert({ content });
-          getTweets().then((res) => {
-            setTweets(res);
+          getTweets().then(() => {
             const form = e.target as HTMLFormElement;
             form.reset();
           });
@@ -67,18 +67,14 @@ const App = () => {
                     tweet_id: tweet.id,
                   });
                 }
-                getTweets().then((res) => {
-                  setTweets(res);
-                });
+                getTweets();
               }
             }>좋아요 {tweet.like[0].count}개</button>
             {userId === tweet.user?.id &&
               <button onClick={
                 async () => {
                   await supabaseClient.from("tweets").delete().eq("id", tweet.id);
-                  getTweets().then((res) => {
-                    setTweets(res);
-                  });
+                  getTweets();
                 }}>트윗 삭제</button>
             }
             <form
@@ -90,8 +86,7 @@ const App = () => {
                   content,
                   tweet_id: tweet.id,
                 });
-                getTweets().then((res) => {
-                  setTweets(res);
+                getTweets().then(() => {
                   const form = e.target as HTMLFormElement;
                   form.reset();
                 });
@@ -108,9 +103,7 @@ const App = () => {
                   <button onClick={
                     async () => {
                       await supabaseClient.from("comments").delete().eq("id", comment.id);
-                      getTweets().then((res) => {
-                        setTweets(res);
-                      });
+                      getTweets();
                     }}>댓글 삭제</button>
                 }
               </li>))}
@@ -124,6 +117,11 @@ const App = () => {
           navigate("/sign-in");
         }
       }>로그아웃</button>
+      <button onClick={
+        async () => {
+          navigate("/my-profile");
+        }
+      }>내 정보</button>
     </>
   );
 };
