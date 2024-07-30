@@ -1,37 +1,16 @@
-import { useNavigate } from "react-router-dom";
-import { supabaseClient } from "../supabaseClient";
-import { AuthError } from "@supabase/supabase-js";
+import { SignInForm } from '../components/SignInForm';
 
 export default function SignIn() {
-    const navigate = useNavigate();
-    const signIn = async (email: string, password: string) => {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error instanceof AuthError) {
-            console.log("Error signing in:", error.name, error.message);
-            throw error
-        }
-        return data;
-    };
-
     return (
-        <form
-            onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target as HTMLFormElement);
-                const email = formData.get("email")?.toString() ?? '';
-                const password = formData.get("password")?.toString() ?? '';
-                await signIn(email, password);
-                navigate("/");
-            }}
-        >
-            <label htmlFor="email">Email:</label>
-            <input type="email" name="email" />
-            <label htmlFor="password">Password:</label>
-            <input type="password" name="password" />
-            <button type="submit">Sign In</button>
-        </form>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8">
+                <div>
+                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                        계정에 로그인하세요
+                    </h2>
+                </div>
+                <SignInForm />
+            </div>
+        </div>
     );
 }

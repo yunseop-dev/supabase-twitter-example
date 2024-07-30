@@ -1,129 +1,50 @@
-import { useEffect, useState } from "react";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabaseClient } from "./supabaseClient";
-import type { QueryData } from "@supabase/supabase-js";
-import { Link, useNavigate } from "react-router-dom";
-const tweetsQuery = supabaseClient
-  .from("tweets")
-  .select(`*, 
-    comments(
-      *,
-      user:users!comments_userid_fkey(*)
-    ),
-    like:likes!likes_tweetid_fkey(count),
-    user:users!tweets_userid_fkey(*)`)
-type TweetsWithComments = QueryData<typeof tweetsQuery>
+import { useTweets } from './hooks/useTweets';
+import { useAuth } from './hooks/useAuth';
+import { TweetForm } from './components/TweetForm';
+import { Tweet } from './components/Tweet';
 
-const App = () => {
+const App: React.FC = () => {
   const navigate = useNavigate();
-  const [tweets, setTweets] = useState<TweetsWithComments | null>([]);
-  const [userId, setUserId] = useState<string | null>(null);
-  const getTweets = async () => {
-    const { data } = await tweetsQuery
-    setTweets(data);
-  };
+  const { tweets, getTweets } = useTweets();
+  const { userId } = useAuth();
 
-  useEffect(() => {
-    supabaseClient.auth.onAuthStateChange(async (_, session) => {
-      if (!session) {
-        navigate("/sign-in");
-        return;
-      }
-      setUserId(session.user.id);
+  React.useEffect(() => {
+    if (userId) {
       getTweets();
-    });
-  }, [navigate]);
+    }
+  }, [userId, getTweets]);
 
   return (
-    <>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          const content = formData.get("content")?.toString() ?? '';
-          await supabaseClient.from("tweets").insert({ content });
-          getTweets().then(() => {
-            const form = e.target as HTMLFormElement;
-            form.reset();
-          });
-        }}
-      >
-        <label htmlFor="content">트윗:</label>
-        <input type="text" name="content" />
-        <button type="submit">트윗</button>
-      </form>
-      <ul>
-        {tweets?.map((tweet, tweetId) => (
-          <li key={tweet.id}>
-            <Link to={`/tweet/${tweet.id}`}>트윗 {tweetId}</Link>
-            / {tweet.user?.name}: {tweet.content}
-            / <button onClick={
-              async () => {
-                // check if the user already liked the tweet with the current user id
-                const { data: likes } = await supabaseClient.from("likes").select().eq("tweet_id", tweet.id).eq("user_id", userId ?? '');
-                if ((likes?.length ?? 0) > 0) {
-                  await supabaseClient.from("likes").delete().eq("tweet_id", tweet.id);
-                } else {
-                  await supabaseClient.from("likes").insert({
-                    tweet_id: tweet.id,
-                  });
-                }
-                getTweets();
-              }
-            }>좋아요 {tweet.like[0].count}개</button>
-            {userId === tweet.user?.id &&
-              <button onClick={
-                async () => {
-                  await supabaseClient.from("tweets").delete().eq("id", tweet.id);
-                  getTweets();
-                }}>트윗 삭제</button>
-            }
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target as HTMLFormElement);
-                const content = formData.get("content")?.toString() ?? '';
-                await supabaseClient.from("comments").insert({
-                  content,
-                  tweet_id: tweet.id,
-                });
-                getTweets().then(() => {
-                  const form = e.target as HTMLFormElement;
-                  form.reset();
-                });
-              }}
-            >
-              <label htmlFor="content">댓글:</label>
-              <input type="text" name="content" />
-              <button type="submit">댓글</button>
-            </form>
-            <ul>
-              {tweet.comments.map((comment, commentId) => (<li key={comment.id}>
-                댓글 {commentId} / {comment.user?.name}: {comment.content} /
-                {userId === comment.user?.id &&
-                  <button onClick={
-                    async () => {
-                      await supabaseClient.from("comments").delete().eq("id", comment.id);
-                      getTweets();
-                    }}>댓글 삭제</button>
-                }
-              </li>))}
-            </ul>
-          </li>
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6 text-center text-indigo-600">트위터 클론</h1>
+      <TweetForm onTweetCreated={getTweets} />
+      <ul className="space-y-4">
+        {tweets?.map((tweet, index) => (
+          <Tweet key={tweet.id} tweet={tweet} userId={userId} tweetId={index} onUpdate={getTweets} />
         ))}
       </ul>
-      <button onClick={
-        async () => {
-          await supabaseClient.auth.signOut();
-          navigate("/sign-in");
-        }
-      }>로그아웃</button>
-      <button onClick={
-        async () => {
-          navigate("/my-profile");
-        }
-      }>내 정보</button>
-    </>
+      <div className="mt-8 flex justify-center space-x-4">
+        <button
+          onClick={async () => {
+            await supabaseClient.auth.signOut();
+            navigate("/sign-in");
+          }}
+          className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          로그아웃
+        </button>
+        <button
+          onClick={() => navigate("/my-profile")}
+          className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          내 정보
+        </button>
+      </div>
+    </div>
   );
 };
 
-export default App
+export default App;
